@@ -57,9 +57,8 @@ def get_slide_magnification(slide, data_format):
     except:
         logging.info(f'{data_format}')
         logging.info(f'{slide.properties}')
-        a=sksk
-        mag = 10
-        logging.info('failed to get magnification from slide, using default value')
+        logging.info('failed to get magnification from slide')
+        raise
     return mag
         
 
@@ -224,6 +223,50 @@ def _get_tiles(slide: openslide.OpenSlide,
         time_list = [0]
 
     return tiles_PIL, time_list, labels
+
+def get_patches_with_overlap(slide_file, segMap_file, rate = 8, size = 4096, thresh = 0.02, overlap = 64, level = 2):
+    img = openslide.open_slide(slide_file)
+    slide_size = (int(img.level_dimensions[level][1] / rate), int(img.level_dimensions[level][0] / rate))
+    segMap = np.array(Image.open(segMap_file))
+    (rows, cols) = np.where(segMap == 255)
+    min_row, max_row = rows.min(), rows.max()
+    min_col, max_col = cols.min(), cols.max()
+    scale = int(img.level_dimensions[0][1] / segMap.shape[0] / 4)
+
+    top_left = (min_row * scale * 4, min_col * scale * 4)
+    bottom_right = (max_row * scale * 4, max_col * scale * 4)
+    row_start = [top_left[0]]
+    next_start = row_start[-1]+(size-2*overlap)*4
+    row_end = [row_start[0]+size*4]
+    while next_start < bottom_right[0]:
+        row_start += [next_start]
+        row_end += [next_start+size*4]
+        next_start = row_start[-1]+(size-2*overlap)*4
+        
+    col_start = [top_left[1]]
+    next_start = col_start[-1]+(size-2*overlap)*4
+    col_end = [col_start[0]+size*4]
+    while next_start < bottom_right[1]:
+        col_start += [next_start]
+        col_end += [next_start+size*4]
+        next_start = col_start[-1]+(size-2*overlap)*4
+
+    for i, row in enumerate(row_start):
+        for j, col in enumerate(col_start):
+            window_top_left = (row, col)
+            window_top_left_in_level = (int(row/(4*rate)), int(col/(4*rate)))
+            window_bottom_right = (row_end[i], col_end[j])
+            window_size = (int((row_end[i]-row) / 4), int((col_end[j]-col) / 4))
+            window_size_in_level = (int((row_end[i]-row) / (4*rate)), int((col_end[j]-col) / (4*rate)))
+            seg_top_left = (int(row/scale/4), int(col/scale/4))
+            seg_bottom_right = (int(row_end[i]/scale/4), int(col_end[j]/scale/4))
+            seg = segMap[seg_top_left[0]:seg_bottom_right[0], seg_top_left[1]:seg_bottom_right[1]]
+            valid = np.mean(seg)/255 > thresh
+            if not valid:
+                continue
+            image = img.read_region((window_top_left[1], window_top_left[0]), level, (window_size[1], window_size[0])).convert('RGB')
+            to_yield = (normalize(transforms.ToTensor()(image).unsqueeze(0)), window_top_left_in_level, window_size, slide_size)
+            yield to_yield
 
 
 def device_gpu_cpu():
