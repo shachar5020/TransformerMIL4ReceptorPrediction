@@ -254,7 +254,7 @@ def get_patches_with_overlap(slide_file, segMap_file, rate = 8, size = 4096, thr
     for i, row in enumerate(row_start):
         for j, col in enumerate(col_start):
             window_top_left = (row, col)
-            window_top_left_in_level = (int(row/(4*rate)), int(col/(4*rate)))
+            window_top_left_in_level = (int(row/(rate)), int(col/(rate)))
             window_bottom_right = (row_end[i], col_end[j])
             window_size = (int((row_end[i]-row) / 4), int((col_end[j]-col) / 4))
             window_size_in_level = (int((row_end[i]-row) / (4*rate)), int((col_end[j]-col) / (4*rate)))
@@ -267,6 +267,7 @@ def get_patches_with_overlap(slide_file, segMap_file, rate = 8, size = 4096, thr
             image = img.read_region((window_top_left[1], window_top_left[0]), level, (window_size[1], window_size[0])).convert('RGB')
             to_yield = (normalize(transforms.ToTensor()(image).unsqueeze(0)), window_top_left_in_level, window_size, slide_size)
             yield to_yield
+
 
 
 def device_gpu_cpu():
