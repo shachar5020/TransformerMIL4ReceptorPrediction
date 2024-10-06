@@ -176,6 +176,43 @@ Run with wandb:
     $ python3 train_mil_transformer.py --test --test_dataset ./TCGA --target ER --ckpt_path "wandb:jhrfernu:best_k" --exp_name test_inference --test_features_dir ./runs/Exp_1-ER-TestFold_1/Inference/TCGA_test_features/ --user shachar5020
 
 
+6) Perform pixel level inference for heatmap visualization:
+-----------------------------------
+        inference_full_slide_for_visualization_pixel_level.py [arguments]
+    
+    Arguments:
+        --checkpoint_path     Checkpoint path of the trained model to use for inference.
+        
+        --slide_path          Path to the slide on which to run inference.
+        
+        --segmap_path         Path to a pixel level segemntation map corresponding to the specified slide.
+        
+        --output_path         Path to the folder where the outputs will be saved.
+
+
+Example
+-------
+
+    $ python3 inference_full_slide_for_visualization_pixel_level.py --checkpoint_path './runs/Exp_1-ER-TestFold_1/Model_CheckPoints/model_data_Last_Epoch.pt' --slide_path './example_data_dir/TCGA-A8-A09T-01A-01-TS1.46733e61-04d6-4b8f-97ba-d115e9208e9b.svs' --segmap_path './example_data_dir/SegData/SegMaps/TCGA-A8-A09T-01A-01-TS1.46733e61-04d6-4b8f-97ba-d115e9208e9b_SegMap.jpg' --output_path './Visualizations'
+
+The code will generate a heatmap file and a tile level segmentation map which are needed for the generation of the final heatmap as it is shown in the paper.
+
+7) Generate a heatmap from the output of the pixel level inference:
+-----------------------------------
+        generate_heatmap.py [arguments]
+    
+    Arguments:
+        --heatmap_folder_path Path to the folder where the output from the pixel level inference was saved.
+        
+
+Example
+-------
+
+    $ python3 generate_heatmap.py --heatmap_folder_path './example_heatmap_files/'
+
+In the folder example_heatmap_files we have provided example files to be used by the code to generate the heatmap shown in the paper. 
+
+
 Requirements
 ------- 
 
